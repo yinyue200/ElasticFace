@@ -4,12 +4,13 @@ import os
 import time
 
 import torch
-import torch.distributed as dist
+#import torch.distributed as dist
 import torch.nn.functional as F
 from torch.nn.parallel.distributed import DistributedDataParallel
 import torch.utils.data.distributed
 from torch.nn.utils import clip_grad_norm_
 from torch.nn import CrossEntropyLoss
+from torch.utils.data import DataLoader
 
 from utils import losses
 from config.config import config as cfg
@@ -23,11 +24,13 @@ from backbones.iresnet import iresnet100, iresnet50
 torch.backends.cudnn.benchmark = True
 
 def main(args):
-    dist.init_process_group(backend='nccl', init_method='env://')
+    #dist.init_process_group(backend='nccl', init_method='env://')
     local_rank = args.local_rank
     torch.cuda.set_device(local_rank)
-    rank = dist.get_rank()
-    world_size = dist.get_world_size()
+    rank=0
+    #rank = dist.get_rank()
+    #world_size = dist.get_world_size()
+    world_size = 1
 
     if not os.path.exists(cfg.output) and rank == 0:
         os.makedirs(cfg.output)
@@ -39,12 +42,12 @@ def main(args):
 
     trainset = MXFaceDataset(root_dir=cfg.rec, local_rank=local_rank)
 
-    train_sampler = torch.utils.data.distributed.DistributedSampler(
-        trainset, shuffle=True)
+    #train_sampler = torch.utils.data.DataLoader(
+    #    trainset, shuffle=True)
 
-    train_loader = DataLoaderX(
-        local_rank=local_rank, dataset=trainset, batch_size=cfg.batch_size,
-        sampler=train_sampler, num_workers=0, pin_memory=True, drop_last=True)
+    train_loader = DataLoader(
+        dataset=trainset, batch_size=cfg.batch_size,
+          drop_last=True)
 
     # load model
     if cfg.network == "iresnet100":
@@ -66,11 +69,11 @@ def main(args):
         except (FileNotFoundError, KeyError, IndexError, RuntimeError):
             logging.info("load backbone resume init, failed!")
 
-    for ps in backbone.parameters():
-        dist.broadcast(ps, 0)
+    #for ps in backbone.parameters():
+    #    dist.broadcast(ps, 0)
 
-    backbone = DistributedDataParallel(
-        module=backbone, broadcast_buffers=False, device_ids=[local_rank])
+    # backbone = DistributedDataParallel(
+    #    module=, broadcast_buffers=False, device_ids=0)
     backbone.train()
 
     # get header
@@ -101,8 +104,8 @@ def main(args):
         except (FileNotFoundError, KeyError, IndexError, RuntimeError):
             logging.info("header resume init, failed!")
     
-    header = DistributedDataParallel(
-        module=header, broadcast_buffers=False, device_ids=[local_rank])
+    #header = DistributedDataParallel(
+    #    module=header, broadcast_buffers=False, device_ids=[local_rank])
     header.train()
 
     opt_backbone = torch.optim.SGD(
@@ -149,7 +152,7 @@ def main(args):
     loss = AverageMeter()
     global_step = cfg.global_step
     for epoch in range(start_epoch, cfg.num_epoch):
-        train_sampler.set_epoch(epoch)
+        #train_sampler.set_epoch(epoch)
         for _, (img, label) in enumerate(train_loader):
             global_step += 1
             img = img.cuda(local_rank, non_blocking=True)
@@ -179,7 +182,7 @@ def main(args):
 
         callback_checkpoint(global_step, backbone, header)
 
-    dist.destroy_process_group()
+    #dist.destroy_process_group()
 
 
 if __name__ == "__main__":

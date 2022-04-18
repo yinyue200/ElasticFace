@@ -5,7 +5,7 @@ config.dataset = "emoreIresNet" # training dataset
 config.embedding_size = 512 # embedding size of model
 config.momentum = 0.9
 config.weight_decay = 5e-4
-config.batch_size = 128 # batch size per GPU
+config.batch_size = 2 # batch size per GPU
 config.lr = 0.1
 config.output = "output/R100_ElasticArcFace" # train model output folder
 config.global_step=0 # step to resume
@@ -35,12 +35,12 @@ elif (config.loss=="ElasticCosFace"):
 
 
 # type of network to train [iresnet100 | iresnet50]
-config.network = "iresnet100"
+config.network = "iresnet50"
 config.SE=False # SEModule
 
 
 if config.dataset == "emoreIresNet":
-    config.rec = "/data/psiebke/faces_emore"
+    config.rec = "F:\\sharedir\\ms1m-retinaface-t1"
     config.num_classes = 85742
     config.num_image = 5822653
     config.num_epoch =  26
@@ -53,7 +53,7 @@ if config.dataset == "emoreIresNet":
     config.lr_func = lr_step_func
 
 elif config.dataset == "webface":
-    config.rec = "/data/fboutros/faces_webface_112x112"
+    config.rec = "F:\\sharedir\\ms1m-retinaface-t1"
     config.num_classes = 10572
     config.num_image = 501195
     config.num_epoch = 40   #  [22, 30, 35]

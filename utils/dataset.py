@@ -46,7 +46,7 @@ class DataLoaderX(DataLoader):
 
     def __iter__(self):
         self.iter = super(DataLoaderX, self).__iter__()
-        self.iter = BackgroundGenerator(self.iter, self.local_rank)
+        #self.iter = BackgroundGenerator(self.iter, self.local_rank)
         self.preload()
         return self
 
